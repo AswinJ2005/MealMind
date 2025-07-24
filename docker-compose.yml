@@ -1,0 +1,21 @@
+version: '3.8' # Specifies the version of the Docker Compose file format
+
+services:
+  # This is the name of our database service
+  db:
+    image: postgres:15 # Use the official PostgreSQL image, version 15
+    container_name: mealmind-db # A friendly name for our container
+    restart: always # Always restart the container if it stops
+    environment:
+      POSTGRES_USER: mealminduser
+      POSTGRES_PASSWORD: mealmindsecret # IMPORTANT: Use a real secret for production!
+      POSTGRES_DB: mealmind_dev_db
+    ports:
+      - "5432:5432" # Map port 5432 on your machine to port 5432 in the container
+    volumes:
+      # This line ensures your data persists even if the container is removed
+      - postgres-data:/var/lib/postgresql/data
+
+# This defines the named volume we used above, allowing Docker to manage it
+volumes:
+  postgres-data:
