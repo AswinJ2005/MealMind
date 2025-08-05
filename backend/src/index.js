@@ -1,7 +1,7 @@
 // --- 1. SETUP & IMPORTS ---
 
 // Load environment variables from the .env file.
-// This should be the very first line to ensure variables are available everywhere.
+// This must be the first line to ensure variables are available everywhere.
 require('dotenv').config();
 
 // Initialize the Firebase Admin SDK connection.
@@ -11,9 +11,10 @@ require('./config/firebase');
 const express = require('express');
 const pool = require('./config/database'); // Import our centralized database pool.
 
-// Import our route handlers.
+// Import our route handlers for different features.
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
+const mealPlanRoutes = require('./routes/mealPlan.routes'); // <-- The newly added routes
 
 
 // --- 2. EXPRESS APP CONFIGURATION ---
@@ -24,21 +25,23 @@ const PORT = process.env.PORT || 3001;
 
 
 // --- MIDDLEWARE ---
-// Middleware functions are executed in the order they are defined.
+// Middleware functions are executed in order. This order is important.
 
 // This is the crucial middleware to parse incoming JSON payloads from request bodies.
-// It MUST be defined before any routes that need to read `req.body`.
 app.use(express.json());
 
 
 // --- ROUTES ---
-// We delegate route handling to our specialized router files.
+// We delegate route handling to our specialized router files based on the URL prefix.
 
-// Any request starting with '/api/v1/auth' will be handled by our authRoutes file.
+// Handle all authentication-related requests (e.g., /register)
 app.use('/api/v1/auth', authRoutes);
 
-// Any request starting with '/api/v1/users' will be handled by our userRoutes file.
+// Handle all user-profile-related requests (e.g., /me)
 app.use('/api/v1/users', userRoutes);
+
+// Handle all meal-plan-related requests (e.g., /generate)
+app.use('/api/v1/meal-plans', mealPlanRoutes);
 
 
 // --- 3. DIAGNOSTIC & SERVER START ---
@@ -56,7 +59,6 @@ app.get('/db-test', async (req, res) => {
     }
 });
 
-// A catch-all route for any requests to endpoints that don't exist.
 // A catch-all middleware for any requests to endpoints that don't exist.
 // This MUST be the last `app.use` or `app.get/post` in the file.
 app.use((req, res) => {
@@ -64,7 +66,7 @@ app.use((req, res) => {
 });
 
 
-// Start the server and make it listen for incoming requests on the specified port.
+// Start the server and listen for incoming requests on the specified port.
 app.listen(PORT, () => {
     console.log(`Server is listening on http://localhost:${PORT}`);
 });
