@@ -1,7 +1,6 @@
 // --- 1. SETUP & IMPORTS ---
 
 // Load environment variables from the .env file.
-// This must be the first line to ensure variables are available everywhere.
 require('dotenv').config();
 
 // Initialize the Firebase Admin SDK connection.
@@ -9,50 +8,41 @@ require('./config/firebase');
 
 // Import necessary modules.
 const express = require('express');
-const pool = require('./config/database'); // Import our centralized database pool.
+const pool = require('./config/database');
 
-// Import our route handlers for different features.
+// Import all of our application's route handlers.
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
-const mealPlanRoutes = require('./routes/mealPlan.routes'); // <-- The newly added routes
+const mealRoutes = require('./routes/meal.routes'); // <-- NEW: Import meal routes
 
 
 // --- 2. EXPRESS APP CONFIGURATION ---
 
-// Create an instance of the Express application.
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 
 // --- MIDDLEWARE ---
-// Middleware functions are executed in order. This order is important.
-
-// This is the crucial middleware to parse incoming JSON payloads from request bodies.
 app.use(express.json());
 
 
 // --- ROUTES ---
-// We delegate route handling to our specialized router files based on the URL prefix.
+// We delegate route handling based on the initial path segment.
 
-// Handle all authentication-related requests (e.g., /register)
-app.use('/api/v1/auth', authRoutes);
-
-// Handle all user-profile-related requests (e.g., /me)
-app.use('/api/v1/users', userRoutes);
-
-// Handle all meal-plan-related requests (e.g., /generate)
-app.use('/api/v1/meal-plans', mealPlanRoutes);
+app.use('/api/v1/auth', authRoutes);     // Handles /register, /login, etc.
+app.use('/api/v1/users', userRoutes);    // Handles /users/me, etc.
+app.use('/api/v1/meals', mealRoutes);    // <-- NEW: Handles /meals/analyze-image, etc.
 
 
 // --- 3. DIAGNOSTIC & SERVER START ---
 
-// A simple diagnostic route to quickly test the database connection.
+// A diagnostic route to test the database connection.
 app.get('/db-test', async (req, res) => {
     try {
         const client = await pool.connect();
         const result = await client.query('SELECT NOW()');
         res.json({ message: 'DB Test Successful', dbTime: result.rows[0].now });
-        client.release(); // Important: release the client back to the pool
+        client.release();
     } catch (err) {
         console.error('Database connection test failed:', err);
         res.status(500).json({ error: 'DB Connection Failed' });
@@ -60,13 +50,13 @@ app.get('/db-test', async (req, res) => {
 });
 
 // A catch-all middleware for any requests to endpoints that don't exist.
-// This MUST be the last `app.use` or `app.get/post` in the file.
+// This MUST be the last route handler in the file.
 app.use((req, res) => {
     res.status(404).json({ error: `Route ${req.originalUrl} not found.` });
 });
 
 
-// Start the server and listen for incoming requests on the specified port.
+// Start the server.
 app.listen(PORT, () => {
     console.log(`Server is listening on http://localhost:${PORT}`);
 });
