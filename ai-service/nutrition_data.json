@@ -1,0 +1,29 @@
+{
+    "banana": {
+        "calories_per_100g": 89,
+        "protein_g": 1.1,
+        "carbohydrates_g": 22.8,
+        "fats_g": 0.3
+    },
+    "apple": {
+        "calories_per_100g": 52,
+        "protein_g": 0.3,
+        "carbohydrates_g": 13.8,
+        "fats_g": 0.2
+    },
+    "scrambled_eggs": {
+        "calories_per_100g": 149,
+        "protein_g": 10.0,
+        "carbohydrates_g": 1.5,
+        "fats_g": 11.0
+    },
+    "cheeseburger": {
+        "calories_per_100g": 303,
+        "protein_g": 16.0,
+        "carbohydrates_g": 25.0,
+        "fats_g": 15.0
+    },
+    "default": {
+        "error": "Nutrition information not found for this item."
+    }
+}

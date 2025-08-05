@@ -1,35 +1,54 @@
 const axios = require('axios');
+const pool = require('../config/database'); // <-- Import the database pool
 
 const analyzeImage = async (req, res) => {
-    // 1. Get the image URL from the request body.
     const { imageUrl } = req.body;
+    const userUid = req.user.uid; // <-- Get user's ID from our auth middleware
 
     if (!imageUrl) {
         return res.status(400).json({ error: 'Missing imageUrl in request body.' });
     }
 
-    // 2. Call our Python AI service.
-    // In a production environment, 'http://localhost:5000' would be a real domain or an environment variable.
     const aiServiceUrl = 'http://localhost:5000/predict';
 
     try {
-        console.log(`Forwarding request to AI service at ${aiServiceUrl}`);
-        
-        const response = await axios.post(aiServiceUrl, {
+        // 1. Call the Python AI service
+        console.log(`Forwarding request to AI service...`);
+        const aiResponse = await axios.post(aiServiceUrl, {
             image_url: imageUrl
         });
-
-        // 3. For now, we will just return the data from the AI service.
-        // In the future, we would add code here to save this data to the user's log in the database.
         
-        console.log('Received response from AI service:', response.data);
+        const analysis = aiResponse.data;
+        console.log('Received response from AI service:', analysis);
 
-        // 4. Send the nutrition data back to the client.
-        res.status(200).json(response.data);
+        // --- NEW LOGIC: SAVE THE ANALYSIS RESULT ---
+        if (analysis && analysis.prediction && !analysis.nutrition.error) {
+            const { prediction, nutrition } = analysis;
+            const insertQuery = `
+                INSERT INTO food_logs (user_uid, food_name, calories, protein_g, carbohydrates_g, fats_g)
+                VALUES ($1, $2, $3, $4, $5, $6)
+                RETURNING *;
+            `;
+            const values = [
+                userUid,
+                prediction.label,
+                nutrition.calories_per_100g,
+                nutrition.protein_g,
+                nutrition.carbohydrates_g,
+                nutrition.fats_g
+            ];
+
+            const { rows } = await pool.query(insertQuery, values);
+            console.log('Successfully saved to food_logs:', rows[0]);
+        }
+        // --- END OF NEW LOGIC ---
+
+        // 3. Send the nutrition data back to the client.
+        res.status(200).json(analysis);
 
     } catch (error) {
+        // ... (error handling remains the same)
         console.error('Error calling AI service:', error.message);
-        // Pass along the error from the AI service if available
         if (error.response) {
             return res.status(error.response.status).json(error.response.data);
         }
